@@ -5,6 +5,9 @@ import requests # http request
 from bs4 import BeautifulSoup as bs
 import glob # list all files in a folder
 import re
+import json
+import os.path
+import pickle
 
 
 
@@ -20,6 +23,8 @@ def getPropertyList(requestUrl, n_page):
     propertyList = []
 
     for page in range(1, n_page+1):
+        print("Getting property list...%d/%d" % (page, n_page), end="\r")
+
         soup = bs(requests.get(requestUrl + "/pg-" + str(page), headers=userAgent).text)
 
         pagedList = soup.find("div", {"id": "ListView"}).findAll("div", {"class": "listing-enhanced"})
@@ -39,7 +44,7 @@ def getPropertyList(requestUrl, n_page):
 def getDescription(soup, data):
     description = soup.find("p", {"class": "property-description"})
     if description:
-        data["description"] = description.text
+        data["Description"] = description.text
 
 
 
@@ -95,9 +100,9 @@ def getListingProvider(soup, data):
     if agent:
         data["Listing Agent"] = agent.text
 
-    company = soup.find("th", text = re.compile("Listed by")).parent.find("td").find("ul").find("li")
+    company = soup.find("th", text = re.compile("Listed by"))
     if company:
-        data["Listing Company"] = company.text
+        data["Listing Company"] = company.parent.find("td").find("ul").find("li").text
 
 
 
@@ -125,25 +130,21 @@ def getSoldInfo(soup, data):
 
 def getAssignedPublicSchools(soup, data):
     schools = []
+    table =  soup.find("div", {"id": "SchoolsAndNeighborhood"}).find("h2", text=re.compile("Assigned Public Schools"))
 
-    for tableEntry in soup.find("div", {"id": "SchoolsAndNeighborhood"}).find("h2", text=re.compile("Assigned Public Schools")).findNext("table", {"id": "mapDataTable"}).find("tbody").findAll("tr"):
-        school = {}
-        school["Name"] = tableEntry.find("a").text
-        school["Distance"] = tableEntry.find("td", text=re.compile("mi")).text
-        school["Grade"] = tableEntry.find("td", text=re.compile("-")).text
-        school["Rating"] = tableEntry.find("i")["class"][0]
-        schools.append(school)
+    if table:
+        for entry in table.findNext("table", {"id": "mapDataTable"}).find("tbody").findAll("tr"):
+            school = {}
+            school["Name"] = entry.find("a").text
+            school["Distance"] = entry.find("td", text=re.compile("mi")).text
+            if entry.find("td", text=re.compile("-")):
+                school["Grade"] = entry.find("td", text=re.compile("-")).text
+            if entry.find("td", text=re.compile(":")):
+                school["Student/Teacher Ratio"] = entry.find("td", text=re.compile(":")).text
+            school["Rating"] = entry.find("i")["class"][0]
+            schools.append(school)
 
-    data["Assigned Public Schools"] = schools
-
-
-
-
-
-
-
-def getNearBySchools(soup, data):
-    return
+        data["Assigned Public Schools"] = schools
 
 
 
@@ -151,9 +152,94 @@ def getNearBySchools(soup, data):
 
 
 
+def getMiddleSchools(soup, data):
+    schools = []
+    table = soup.find("div", {"id": "tab-school-middle"})
+    if table:
+        table = table.find("tbody")
+        if table:
+            for entry in table.findAll("tr"):
+                school = {}
+                school["Name"] = entry.find("a").text
+                school["Distance"] = entry.find("td", text=re.compile("mi")).text
+                if entry.find("td", text=re.compile("-")):
+                    school["Grade"] = entry.find("td", text=re.compile("-")).text
+                if entry.find("td", text=re.compile(":")):
+                    school["Student/Teacher Ratio"] = entry.find("td", text=re.compile(":")).text
+                school["Rating"] = entry.find("i")["class"][0]
+                schools.append(school)
+            data["Nearby Middle Schools"] = schools
 
-def getNeighborhood(soup, data):
-    return
+
+
+
+def getElementarySchools(soup, data):
+    schools = []
+
+    table = soup.find("div", {"id": "tab-school-elementary"})
+    if table:
+        table = table.find("tbody")
+        if table:
+            for entry in table.findAll("tr"):
+                school = {}
+                school["Name"] = entry.find("a").text
+                school["Distance"] = entry.find("td", text=re.compile("mi")).text
+                if entry.find("td", text=re.compile("-")):
+                    school["Grade"] = entry.find("td", text=re.compile("-")).text
+                if entry.find("td", text=re.compile(":")):
+                    school["Student/Teacher Ratio"] = entry.find("td", text=re.compile(":")).text
+                school["Rating"] = entry.find("i")["class"][0]
+                schools.append(school)
+            data["Nearby Elementary Schools"] = schools
+
+
+
+
+
+
+
+def getHighSchools(soup, data):
+    schools = []
+    table = soup.find("div", {"id": "tab-school-high"})
+    if table:
+        table = table.find("tbody")
+        if table:
+            for entry in table.findAll("tr"):
+                school = {}
+                school["Name"] = entry.find("a").text
+                school["Distance"] = entry.find("td", text=re.compile("mi")).text
+                if entry.find("td", text=re.compile("-")):
+                    school["Grade"] = entry.find("td", text=re.compile("-")).text
+                if entry.find("td", text=re.compile(":")):
+                    school["Student/Teacher Ratio"] = entry.find("td", text=re.compile(":")).text
+                school["Rating"] = entry.find("i")["class"][0]
+                schools.append(school)
+            data["Nearby High Schools"] = schools
+
+
+
+
+
+def getPrivateSchools(soup, data):
+    schools = []
+    table = soup.find("div", {"id": "tab-school-private"})
+    if table:
+        table = table.find("tbody")
+        if table:
+            for entry in table.findAll("tr"):
+                school = {}
+                school["Name"] = entry.find("a").text
+                school["Distance"] = entry.find("td", text=re.compile("mi")).text
+                if entry.find("td", text=re.compile("-")):
+                    school["Grade"] = entry.find("td", text=re.compile("-")).text
+                if entry.find("td", text=re.compile(":")):
+                    school["Student/Teacher Ratio"] = entry.find("td", text=re.compile(":")).text
+                school["Rating"] = entry.find("i")["class"][0]
+                schools.append(school)
+            data["Nearby Private Schools"] = schools
+
+
+
 
 
 
@@ -190,50 +276,81 @@ def getPhotoUrls(html, data):
 
 if __name__ == "__main__":
 
-# get all property urls
-    getPropertyListRequest = "http://www.realtor.com/propertyrecord-search/San-Francisco_CA/sby-10"
+    n_page = 356 # properties in page 1-356 have details
+    done = 0
 
-    propertyList = getPropertyList(getPropertyListRequest, 1) # properties in page 1-356 have details
+# get all property urls
+
+
+    if os.path.exists(str(n_page)):
+        infile = open(str(n_page), "r")
+        propertyList = [line.rstrip('\n') for line in infile]
+        infile.close()
+    else:
+        getPropertyListRequest = "http://www.realtor.com/propertyrecord-search/San-Francisco_CA/sby-10"
+
+        propertyList = getPropertyList(getPropertyListRequest, n_page)
+        # write property list to file
+        outfile = open(str(n_page), "w")
+        for s in propertyList:
+            outfile.write(s + '\n')
+        outfile.close()
+
+
+
+
 
     for propertyUrl in propertyList:
+
+        done += 1
+        print("Getting property info...%d/%d" % (done, n_page*10), end="\r")
+
+
+
+        propertyName = re.sub("http://www.realtor.com/realestateandhomes-detail/|\?.+", "", propertyUrl)
+        outfilePath = "data/" + propertyName
+
+        # check file existence
+        if os.path.exists(outfilePath):
+            continue
+
+        # get html
         html = requests.get(propertyUrl, headers=userAgent).text
         soup = bs(html)
 
-    # text information into json
         data = {}
 
         # Description
-        #getDescription(soup, data)
+        getDescription(soup, data)
 
         # General Info
-        #getGeneralInfo(soup, data)
+        getGeneralInfo(soup, data)
 
         # Miscellaneous Info
-        #getMiscInfo(soup, data)
+        getMiscInfo(soup, data)
 
         # Listing Provider
-        #getListingProvider(soup, data)
+        getListingProvider(soup, data)
 
         # Sold Info
-        #getSoldInfo(soup, data)
-
-        # Assigned Public Schools
-        #getAssignedPublicSchools(soup, data)
+        getSoldInfo(soup, data)
 
         # Nearby Schools
-        #getNearbySchools(soup, data)
-
-
-
-        # Neighborhood
-       #getNeighborhood(soup, data)
-
+        getAssignedPublicSchools(soup, data)
+        getElementarySchools(soup, data)
+        getMiddleSchools(soup, data)
+        getHighSchools(soup, data)
+        getPrivateSchools(soup, data)
 
         # Photo Urls
         getPhotoUrls(html, data)
 
+        # write file
+        outfile = open(outfilePath, "w")
+        json.dump(data, outfile)
+        outfile.close()
 
-        print(data)
+
 
 
 
