@@ -276,22 +276,25 @@ def getPhotoUrls(html, data):
 
 if __name__ == "__main__":
 
-    n_page = 356 # properties in page 1-356 have details
+    n_page = 420
+    city = "San-Jose_CA"
+    folder = city + "_" + str(n_page)
+    listFile = folder + "/"+ folder
     done = 0
 
 # get all property urls
 
 
-    if os.path.exists(str(n_page)):
-        infile = open(str(n_page), "r")
+    if os.path.exists(listFile): # check property url list file
+        infile = open(listFile, "r")
         propertyList = [line.rstrip('\n') for line in infile]
         infile.close()
     else:
-        getPropertyListRequest = "http://www.realtor.com/propertyrecord-search/San-Francisco_CA/sby-10"
+        getPropertyListRequest = "http://www.realtor.com/propertyrecord-search/" + city + "/sby-10"
 
         propertyList = getPropertyList(getPropertyListRequest, n_page)
         # write property list to file
-        outfile = open(str(n_page), "w")
+        outfile = open(listFile, "w")
         for s in propertyList:
             outfile.write(s + '\n')
         outfile.close()
@@ -308,7 +311,7 @@ if __name__ == "__main__":
 
 
         propertyName = re.sub("http://www.realtor.com/realestateandhomes-detail/|\?.+", "", propertyUrl)
-        outfilePath = "data/" + propertyName
+        outfilePath = folder + "/" + propertyName
 
         # check file existence
         if os.path.exists(outfilePath):
@@ -349,13 +352,5 @@ if __name__ == "__main__":
         outfile = open(outfilePath, "w")
         json.dump(data, outfile)
         outfile.close()
-
-
-
-
-
-
-
-
 
 
