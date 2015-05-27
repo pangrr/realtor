@@ -276,6 +276,7 @@ def getPhotoUrls(html, data):
 
 if __name__ == "__main__":
 
+# Input parameters
     n_page = 420
     city = "San-Jose_CA"
     folder = city + "_" + str(n_page)
